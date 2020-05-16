@@ -85,7 +85,6 @@ class Game {
     }
 
     move(p: Point) {
-        console.dir(this)
         return produce(this, draft => {
             draft.board[p.r][p.q] = draft.turnPlayer;
             for (const v of unitVectors) {
@@ -95,7 +94,7 @@ class Game {
                     p2 = add(p2, v);
                 }
             }
-            if (draft.turnMove === 1 && draft.turnNumber > 2) {
+            if (draft.turnMove === 1 && draft.turnNumber > 1) {
                 draft.turnMove += 1;
             } else {
                 draft.turnMove = 1;
@@ -116,8 +115,10 @@ class Game {
 
                 if (this.at(p2) === State.PlayerA) {
                     playerA += 1;
+                    break;
                 } else if (this.at(p2) === State.PlayerB) {
                     playerB += 1;
+                    break;
                 }
             }
         }
@@ -164,7 +165,7 @@ const Board = () => {
                             stroke="black"
                             strokeWidth={1}
                             x={50 + startX + hexSmallD * q}
-                            y={50 + (hexBigR + hexSmallR / 2) * r}
+                            y={50 + (hexBigR * 1.5) * r}
                             key={`${q}_${r}`}
                             onClick={evt => {
                                 if (evt.evt.button !== 0) return;

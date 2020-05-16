@@ -22,11 +22,21 @@ const color = (field: State) => {
     }
 }
 
+const playerNameHtml = (player: Player) => <span style={{ color: color(player) }}>{player === State.PlayerA ? 'Red' : 'Blue'}</span>;
+
 const isEnemy = (player: Player, field: State) => {
     if (player === State.PlayerA) {
         return [State.PlayerB, State.DominatedB].includes(field);
     } else {
         return [State.PlayerA, State.DominatedA].includes(field);
+    }
+}
+
+const canPlace = (player: Player, field: State) => {
+    if (player === State.PlayerA) {
+        return [State.Empty, State.DominatedA].includes(field);
+    } else {
+        return [State.Empty, State.DominatedB].includes(field);
     }
 }
 
@@ -130,27 +140,58 @@ class Game {
             return State.DominatedB;
         }
     }
+
+    count() {
+        let playerA = 0;
+        let playerB = 0;
+        for (let r = 0; r < this.diamLen; r += 1) {
+            for (let q = 0; q < this.diamLen; q += 1) {
+                const p: Point = { q, r };
+                if (!this.inBounds(p)) continue;
+
+                if (isEnemy(State.PlayerA, this.at(p))) {
+                    playerB += 1;
+                } else if (isEnemy(State.PlayerB, this.at(p))) {
+                    playerA += 1;
+                }
+            }
+        }
+        return { playerA, playerB };
+    }
 }
 
 const Board = () => {
     const [game, setGame] = useState(() => new Game(6));
 
+    const stageW = window.innerWidth;
     const stageH = 800;
     const hexBigR = 30;
     const hexSmallD = Math.sqrt(3) * hexBigR;
     const hexSmallR = hexSmallD / 2;
+
+    const count = game.count();
+
+    let winner: Player | State.Empty = State.Empty;
+    if (!game.board.some((row, r) => row.some((cell, q) => game.inBounds({ q, r }) && canPlace(game.turnPlayer, cell)))) {
+        winner = count.playerA > count.playerB ? State.PlayerA : State.PlayerB;
+    }
 
     return <>
         <div>
             Board size: <input type="number" min={1} value={game.sideLen} onChange={evt => setGame(new Game(Number(evt.target.value)))} />
         </div>
         <div>
-            Turn {game.turnNumber}, move {game.turnMove}. <button onClick={() => setGame(new Game(game.sideLen))}>Reset</button>
+            Turn {game.turnNumber}, move {game.turnMove}.{' '}
+            {playerNameHtml(State.PlayerA)} has {count.playerA} fields. {playerNameHtml(State.PlayerB)} has {count.playerB} fields.{' '}
+            <button onClick={() => setGame(new Game(game.sideLen))}>Reset</button>
         </div>
         <div>
-            <span style={{ color: color(game.turnPlayer) }}>{game.turnPlayer === State.PlayerA ? 'Red' : 'Blue'}</span> player's turn.
+            {winner !== State.Empty
+                ? <>Player {playerNameHtml(winner)} won.</>
+                : <>{playerNameHtml(game.turnPlayer)} player's turn.</>
+            }
         </div>
-        <Stage width={window.innerWidth} height={stageH}>
+        <Stage width={stageW} height={stageH}>
             <Layer>
                 {game.board.flatMap((row, r) => {
                     const startX = r * hexSmallR;
@@ -169,7 +210,7 @@ const Board = () => {
                             key={`${q}_${r}`}
                             onClick={evt => {
                                 if (evt.evt.button !== 0) return;
-                                if (isEnemy(game.turnPlayer, game.at(p))) return;
+                                if (!canPlace(game.turnPlayer, game.at(p))) return;
 
                                 setGame(prev => prev.move(p));
                             }}

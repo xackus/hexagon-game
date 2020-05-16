@@ -32,13 +32,7 @@ const isEnemy = (player: Player, field: State) => {
     }
 }
 
-const canPlace = (player: Player, field: State) => {
-    if (player === State.PlayerA) {
-        return [State.Empty, State.DominatedA].includes(field);
-    } else {
-        return [State.Empty, State.DominatedB].includes(field);
-    }
-}
+const canPlace = (field: State) => field === State.Empty;
 
 const isEmpty = (field: State) => ![State.PlayerA, State.PlayerB].includes(field);
 
@@ -172,7 +166,7 @@ const Board = () => {
     const count = game.count();
 
     let winner: Player | State.Empty = State.Empty;
-    if (!game.board.some((row, r) => row.some((cell, q) => game.inBounds({ q, r }) && canPlace(game.turnPlayer, cell)))) {
+    if (!game.board.some((row, r) => row.some((cell, q) => game.inBounds({ q, r }) && canPlace(cell)))) {
         winner = count.playerA > count.playerB ? State.PlayerA : State.PlayerB;
     }
 
@@ -210,7 +204,7 @@ const Board = () => {
                             key={`${q}_${r}`}
                             onClick={evt => {
                                 if (evt.evt.button !== 0) return;
-                                if (!canPlace(game.turnPlayer, game.at(p))) return;
+                                if (!canPlace(game.at(p))) return;
 
                                 setGame(prev => prev.move(p));
                             }}

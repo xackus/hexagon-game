@@ -24,14 +24,6 @@ const color = (field: State) => {
 
 const playerNameHtml = (player: Player) => <span style={{ color: color(player) }}>{player === State.PlayerA ? 'Red' : 'Blue'}</span>;
 
-const isEnemy = (player: Player, field: State) => {
-    if (player === State.PlayerA) {
-        return [State.PlayerB, State.DominatedB].includes(field);
-    } else {
-        return [State.PlayerA, State.DominatedA].includes(field);
-    }
-}
-
 const canPlace = (field: State) => field === State.Empty;
 
 const isEmpty = (field: State) => ![State.PlayerA, State.PlayerB].includes(field);
@@ -135,7 +127,7 @@ class Game {
         }
     }
 
-    count() {
+    countScores() {
         let playerA = 0;
         let playerB = 0;
         for (let r = 0; r < this.diamLen; r += 1) {
@@ -143,10 +135,10 @@ class Game {
                 const p: Point = { q, r };
                 if (!this.inBounds(p)) continue;
 
-                if (isEnemy(State.PlayerA, this.at(p))) {
-                    playerB += 1;
-                } else if (isEnemy(State.PlayerB, this.at(p))) {
+                if (this.at(p) === State.DominatedA) {
                     playerA += 1;
+                } else if (this.at(p) === State.DominatedB) {
+                    playerB += 1;
                 }
             }
         }
@@ -163,11 +155,11 @@ const Board = () => {
     const hexSmallD = Math.sqrt(3) * hexBigR;
     const hexSmallR = hexSmallD / 2;
 
-    const count = game.count();
+    const scores = game.countScores();
 
     let winner: Player | State.Empty = State.Empty;
     if (!game.board.some((row, r) => row.some((cell, q) => game.inBounds({ q, r }) && canPlace(cell)))) {
-        winner = count.playerA > count.playerB ? State.PlayerA : State.PlayerB;
+        winner = scores.playerA > scores.playerB ? State.PlayerA : State.PlayerB;
     }
 
     return <>
@@ -176,7 +168,7 @@ const Board = () => {
         </div>
         <div>
             Turn {game.turnNumber}, move {game.turnMove}.{' '}
-            {playerNameHtml(State.PlayerA)} has {count.playerA} fields. {playerNameHtml(State.PlayerB)} has {count.playerB} fields.{' '}
+            {playerNameHtml(State.PlayerA)} has {scores.playerA} fields. {playerNameHtml(State.PlayerB)} has {scores.playerB} fields.{' '}
             <button onClick={() => setGame(new Game(game.sideLen))}>Reset</button>
         </div>
         <div>

@@ -14,7 +14,7 @@
 importScripts("https://storage.googleapis.com/workbox-cdn/releases/4.3.1/workbox-sw.js");
 
 importScripts(
-  "/hexagon-game/precache-manifest.7a5f7bd27b4bfb0ec09c20755f6186f0.js"
+  "/hexagon-game/precache-manifest.bf343996c9a07e4c25d6978233f8d9da.js"
 );
 
 self.addEventListener('message', (event) => {

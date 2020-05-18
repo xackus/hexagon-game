@@ -196,7 +196,7 @@ const Board = () => {
                     : <>Player {playerNameHtml(winner)} won.</>
             }
         </div>
-        <div style={{ margin: 'auto', width: 'fit-content' }}>
+        <div style={{ margin: 'auto', width: 'max-content' }}>
             <Stage width={stageW} height={stageH}>
                 <Layer>
                     {game.board.flatMap((row, r) => {

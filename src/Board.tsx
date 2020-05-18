@@ -8,11 +8,13 @@ enum State {
     PlayerB,
     DominatedA,
     DominatedB,
+    Draw,
 }
 
+type Field = Exclude<State, State.Draw>;
 type Player = State.PlayerA | State.PlayerB;
 
-const color = (field: State) => {
+const color = (field: Field) => {
     switch (field) {
         case State.Empty: return '#FCDC5F';
         case State.PlayerA: return '#D2111B';
@@ -24,9 +26,9 @@ const color = (field: State) => {
 
 const playerNameHtml = (player: Player) => <span style={{ color: color(player) }}>{player === State.PlayerA ? 'Red' : 'Blue'}</span>;
 
-const canPlace = (field: State) => field === State.Empty;
+const canPlace = (field: Field) => field === State.Empty;
 
-const isEmpty = (field: State) => ![State.PlayerA, State.PlayerB].includes(field);
+const isEmpty = (field: Field) => ![State.PlayerA, State.PlayerB].includes(field);
 
 interface Point {
     q: number,
@@ -45,7 +47,7 @@ const unitVectors: Point[] = [
 ];
 
 class Game {
-    board: State[][]
+    board: Field[][]
     turnPlayer: Player
     turnMove: number
     turnNumber: number
@@ -157,9 +159,16 @@ const Board = () => {
 
     const scores = game.countScores();
 
-    let winner: Player | State.Empty = State.Empty;
+    let winner: Player | State.Empty | State.Draw = State.Empty;
+
     if (!game.board.some((row, r) => row.some((cell, q) => game.inBounds({ q, r }) && canPlace(cell)))) {
-        winner = scores.playerA > scores.playerB ? State.PlayerA : State.PlayerB;
+        if (scores.playerA === scores.playerB) {
+            winner = State.Draw;
+        } else if (scores.playerA > scores.playerB) {
+            winner = State.PlayerA;
+        } else {
+            winner = State.PlayerB;
+        }
     }
 
     return <>
@@ -172,9 +181,11 @@ const Board = () => {
             <button onClick={() => setGame(new Game(game.sideLen))}>Reset</button>
         </div>
         <div>
-            {winner !== State.Empty
-                ? <>Player {playerNameHtml(winner)} won.</>
-                : <>{playerNameHtml(game.turnPlayer)} player's turn.</>
+            {winner === State.Empty
+                ? <>{playerNameHtml(game.turnPlayer)} player's turn.</>
+                : winner === State.Draw
+                    ? <>Draw.</>
+                    : <>Player {playerNameHtml(winner)} won.</>
             }
         </div>
         <Stage width={stageW} height={stageH}>

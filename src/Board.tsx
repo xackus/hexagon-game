@@ -151,8 +151,6 @@ class Game {
 const Board = () => {
     const [game, setGame] = useState(() => new Game(6));
 
-    const stageW = window.innerWidth;
-    const stageH = 800;
     const hexBigR = 30;
     const hexSmallD = Math.sqrt(3) * hexBigR;
     const hexSmallR = hexSmallD / 2;
@@ -171,6 +169,16 @@ const Board = () => {
         }
     }
 
+    const boardWidth = game.diamLen * hexSmallD;
+    const boardHeight = game.diamLen * hexBigR * 1.5;
+
+    const margin = 30;
+    const stageW = boardWidth + margin * 2;
+    const stageH = boardHeight + margin * 2;
+
+    const offsetX = stageW / 2 - boardWidth / 2 + hexSmallR;
+    const offsetY = margin + hexBigR * 0.75;
+
     return <>
         <div>
             Board size: <input type="number" min={1} value={game.sideLen} onChange={evt => setGame(new Game(Number(evt.target.value)))} />
@@ -188,34 +196,37 @@ const Board = () => {
                     : <>Player {playerNameHtml(winner)} won.</>
             }
         </div>
-        <Stage width={stageW} height={stageH}>
-            <Layer>
-                {game.board.flatMap((row, r) => {
-                    const startX = r * hexSmallR;
-                    return row.flatMap((cell, q) => {
-                        const p = { q, r };
-                        if (!game.inBounds(p)) return [];
+        <div style={{ margin: 'auto', width: 'fit-content' }}>
+            <Stage width={stageW} height={stageH}>
+                <Layer>
+                    {game.board.flatMap((row, r) => {
+                        const outOfBoundsWidth = (game.sideLen - 1) * hexSmallR;
+                        const rowStartX = r * hexSmallR - outOfBoundsWidth;
+                        return row.flatMap((cell, q) => {
+                            const p = { q, r };
+                            if (!game.inBounds(p)) return [];
 
-                        return [<RegularPolygon
-                            sides={6}
-                            radius={hexBigR}
-                            fill={color(cell)}
-                            stroke="black"
-                            strokeWidth={1}
-                            x={50 + startX + hexSmallD * q}
-                            y={50 + (hexBigR * 1.5) * r}
-                            key={`${q}_${r}`}
-                            onClick={evt => {
-                                if (evt.evt.button !== 0) return;
-                                if (!canPlace(game.at(p))) return;
+                            return [<RegularPolygon
+                                sides={6}
+                                radius={hexBigR}
+                                fill={color(cell)}
+                                stroke="black"
+                                strokeWidth={1}
+                                x={offsetX + rowStartX + hexSmallD * q}
+                                y={offsetY + hexBigR * 1.5 * r}
+                                key={`${q}_${r}`}
+                                onClick={evt => {
+                                    if (evt.evt.button !== 0) return;
+                                    if (!canPlace(game.at(p))) return;
 
-                                setGame(prev => prev.move(p));
-                            }}
-                        />];
-                    })
-                })}
-            </Layer>
-        </Stage>
+                                    setGame(prev => prev.move(p));
+                                }}
+                            />];
+                        })
+                    })}
+                </Layer>
+            </Stage>
+        </div>
     </>
 }
 

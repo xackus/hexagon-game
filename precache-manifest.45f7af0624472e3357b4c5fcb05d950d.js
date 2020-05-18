@@ -1,11 +1,11 @@
 self.__precacheManifest = (self.__precacheManifest || []).concat([
   {
-    "revision": "8f67e1eb749b2ccc8f155a9167536edf",
+    "revision": "4064db943cf8b65e5fbdbcd6edf296b4",
     "url": "/hexagon-game/index.html"
   },
   {
-    "revision": "2b2a3a30a360e7775e59",
-    "url": "/hexagon-game/static/css/main.5f361e03.chunk.css"
+    "revision": "a1d1588efb6889ca1338",
+    "url": "/hexagon-game/static/css/main.4c87215a.chunk.css"
   },
   {
     "revision": "db0191c6384edc047e99",
@@ -16,8 +16,8 @@ self.__precacheManifest = (self.__precacheManifest || []).concat([
     "url": "/hexagon-game/static/js/2.7e699fb5.chunk.js.LICENSE.txt"
   },
   {
-    "revision": "2b2a3a30a360e7775e59",
-    "url": "/hexagon-game/static/js/main.becef2af.chunk.js"
+    "revision": "a1d1588efb6889ca1338",
+    "url": "/hexagon-game/static/js/main.ad9ba04e.chunk.js"
   },
   {
     "revision": "85bee769cfee7a9c96c9",

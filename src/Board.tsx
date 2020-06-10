@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Stage, Layer, RegularPolygon } from "react-konva";
+import { Stage, Layer, RegularPolygon, Text } from "react-konva";
 import { produce, immerable } from "immer";
 
 enum State {
@@ -11,10 +11,11 @@ enum State {
     Draw,
 }
 
-type Field = Exclude<State, State.Draw>;
+type FieldState = Exclude<State, State.Draw>;
+type EmptyFieldState = Exclude<FieldState, Player>;
 type Player = State.PlayerA | State.PlayerB;
 
-const color = (field: Field) => {
+const color = (field: FieldState) => {
     switch (field) {
         case State.Empty: return '#FCDC5F';
         case State.PlayerA: return '#D2111B';
@@ -26,9 +27,9 @@ const color = (field: Field) => {
 
 const playerNameHtml = (player: Player) => <span style={{ color: color(player) }}>{player === State.PlayerA ? 'Red' : 'Blue'}</span>;
 
-const canPlace = (field: Field) => field === State.Empty;
+const canPlace = (field: Field) => field.state === State.Empty;
 
-const isEmpty = (field: Field) => ![State.PlayerA, State.PlayerB].includes(field);
+const isEmpty = (field: Field): field is EmptyField => ![State.PlayerA, State.PlayerB].includes(field.state);
 
 interface Point {
     q: number,
@@ -46,6 +47,18 @@ const unitVectors: Point[] = [
     { q: -1, r: 1 },
 ];
 
+interface EmptyField {
+    state: EmptyFieldState,
+    visibleA: number,
+    visibleB: number,
+}
+
+interface TakenField {
+    state: Player,
+}
+
+type Field = EmptyField | TakenField;
+
 class Game {
     board: Field[][]
     turnPlayer: Player
@@ -58,7 +71,7 @@ class Game {
         const diameter = size * 2 - 1;
         this.board = [];
         for (let i = 0; i < diameter; i += 1) {
-            this.board.push(Array(diameter).fill(State.Empty));
+            this.board.push(Array(diameter).fill({ state: State.Empty, visibleA: 0, visibleB: 0 }));
         }
         this.turnPlayer = State.PlayerA;
         this.turnMove = 1;
@@ -84,7 +97,7 @@ class Game {
 
     move(p: Point) {
         return produce(this, draft => {
-            draft.board[p.r][p.q] = draft.turnPlayer;
+            draft.board[p.r][p.q] = {state: draft.turnPlayer};
             for (const v of unitVectors) {
                 let p2 = add(p, v);
                 while (draft.inBounds(p2) && isEmpty(draft.at(p2))) {
@@ -102,31 +115,33 @@ class Game {
         });
     }
 
-    dominator(p: Point) {
-        let playerA = 0;
-        let playerB = 0;
+    dominator(p: Point): EmptyField {
+        let visibleA = 0;
+        let visibleB = 0;
         for (const v of unitVectors) {
             let p2 = p;
             while (true) {
                 p2 = add(p2, v);
                 if (!this.inBounds(p2)) break;
 
-                if (this.at(p2) === State.PlayerA) {
-                    playerA += 1;
+                if (this.at(p2).state === State.PlayerA) {
+                    visibleA += 1;
                     break;
-                } else if (this.at(p2) === State.PlayerB) {
-                    playerB += 1;
+                } else if (this.at(p2).state === State.PlayerB) {
+                    visibleB += 1;
                     break;
                 }
             }
         }
-        if (playerA === playerB) {
-            return State.Empty;
-        } else if (playerA > playerB) {
-            return State.DominatedA;
+        let state: EmptyFieldState;
+        if (visibleA === visibleB) {
+            state = State.Empty;
+        } else if (visibleA > visibleB) {
+            state = State.DominatedA;
         } else {
-            return State.DominatedB;
+            state = State.DominatedB;
         }
+        return {state, visibleA, visibleB};
     }
 
     countScores() {
@@ -137,9 +152,9 @@ class Game {
                 const p: Point = { q, r };
                 if (!this.inBounds(p)) continue;
 
-                if (this.at(p) === State.DominatedA) {
+                if (this.at(p).state === State.DominatedA) {
                     playerA += 1;
-                } else if (this.at(p) === State.DominatedB) {
+                } else if (this.at(p).state === State.DominatedB) {
                     playerB += 1;
                 }
             }
@@ -152,6 +167,7 @@ const Board = () => {
     const [game, setGame] = useState(() => new Game(6));
 
     const hexBigR = 30;
+    const hexBigD = hexBigR * 2;
     const hexSmallD = Math.sqrt(3) * hexBigR;
     const hexSmallR = hexSmallD / 2;
 
@@ -206,22 +222,39 @@ const Board = () => {
                             const p = { q, r };
                             if (!game.inBounds(p)) return [];
 
-                            return [<RegularPolygon
-                                sides={6}
-                                radius={hexBigR}
-                                fill={color(cell)}
-                                stroke="black"
-                                strokeWidth={1}
-                                x={offsetX + rowStartX + hexSmallD * q}
-                                y={offsetY + hexBigR * 1.5 * r}
-                                key={`${q}_${r}`}
-                                onClick={evt => {
-                                    if (evt.evt.button !== 0) return;
-                                    if (!canPlace(game.at(p))) return;
+                            const centerX = offsetX + rowStartX + hexSmallD * q;
+                            const centerY = offsetY + hexBigR * 1.5 * r;
 
-                                    setGame(prev => prev.move(p));
-                                }}
-                            />];
+                            return [
+                                <RegularPolygon
+                                    sides={6}
+                                    radius={hexBigR}
+                                    fill={color(cell.state)}
+                                    stroke="black"
+                                    strokeWidth={1}
+                                    x={centerX}
+                                    y={centerY}
+                                    key={`${q}_${r}`}
+                                    onClick={evt => {
+                                        if (evt.evt.button !== 0) return;
+                                        if (!canPlace(game.at(p))) return;
+
+                                        setGame(prev => prev.move(p));
+                                    }}
+                                />,
+                                isEmpty(cell) && cell.visibleA - cell.visibleB !== 0 && <Text
+                                    text={Math.abs(cell.visibleA - cell.visibleB).toString()}
+                                    x={centerX - hexSmallR}
+                                    y={centerY - hexBigR}
+                                    width={hexSmallD}
+                                    height={hexBigD}
+                                    align="center"
+                                    verticalAlign="middle"
+                                    fontSize={24}
+                                    key={`${q}_${r}_text`}
+                                    listening={false}
+                                />
+                            ];
                         })
                     })}
                 </Layer>
